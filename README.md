@@ -14,7 +14,7 @@ A lightweight Retrieval-Augmented Generation (RAG) application using the smalles
 ## Tech Stack
 
 - **LLM**: Qwen2.5-0.5B-Instruct (GGUF Q4_K_M quantization)
-- **Embeddings**: all-MiniLM-L6-v2 (sentence-transformers)
+- **Embeddings**: all-mpnet-base-v2 (sentence-transformers) - upgraded for better accuracy
 - **Vector Search**: Numpy cosine similarity
 - **Interface**: Gradio
 - **Inference**: llama.cpp
@@ -73,18 +73,8 @@ The application will:
 - Process documents from the `documents/` directory
 - Launch a Gradio interface at `http://127.0.0.1:7860`
 
-### 3. Access via SSH Tunnel (Remote Server)
 
-If running on a remote server, create an SSH tunnel:
-
-```bash
-# On your local machine
-ssh -L 7860:127.0.0.1:7860 user@remote-server
-```
-
-Then open your browser to `http://localhost:7860`
-
-### 4. Use the Interface
+### 3. Use the Interface
 
 1. Open your browser to `http://localhost:7860`
 2. Ask questions about your documents
@@ -159,6 +149,69 @@ max_tokens=256        # Max response length
 - **Query Response**: ~1-3 seconds (CPU)
 - **Memory Usage**: ~500MB-1GB
 - **Model Size**: ~400MB (Q4 quantization)
+
+## Incremental Improvements
+
+This RAG application has been iteratively improved to enhance accuracy and reliability. Here are the key optimizations:
+
+### 1. Enhanced Embedding Model
+**Upgrade**: `all-MiniLM-L6-v2` → `all-mpnet-base-v2`
+
+- **Why**: The MPNet model provides higher quality embeddings with better semantic understanding
+- **Trade-off**: Slightly larger model size (~420MB vs ~80MB) but significantly better retrieval accuracy
+- **Impact**: More relevant chunks are retrieved, leading to better answers
+
+### 2. Chain-of-Thought Prompting
+**Problem Solved**: Model was selecting incorrect chunks or providing irrelevant answers
+
+**Solution**: Implemented structured reasoning in the prompt:
+```
+Step 1: Find the relevant information in the context
+Step 2: Identify which field/category it belongs to
+Step 3: State the answer
+```
+
+**Benefits**:
+- Forces the model to reason through the problem systematically
+- Reduces hallucination by grounding responses in context
+- Improves answer precision for specific queries
+
+### 3. Optimized Generation Parameters
+**Changes**:
+- **Temperature**: `0.7` → `0.1` (more deterministic, focused answers)
+- **Top_p**: Set to `0.95` for nucleus sampling
+- **Stop tokens**: Added `["Question:", "\n\n\n", "Step 4"]` to prevent rambling
+
+**Impact**: Answers are more concise and directly address the question without unnecessary elaboration.
+
+### 4. Better Context Formatting
+**Improvement**: Context now includes clear source citations:
+```
+[source_file.txt]
+chunk text here
+```
+
+**Benefits**:
+- Model can reference specific sources
+- Users can verify information
+- Improved traceability
+
+### Example Improvement
+**Query**: "What are machine learning applications in e-commerce?"
+
+**Before**: Model might select a general ML definition chunk and provide a vague answer
+
+**After**: With chain-of-thought prompting and better embeddings, the model:
+1. Identifies the key terms: "machine learning" + "e-commerce"
+2. Retrieves the chunk specifically about e-commerce applications
+3. Provides a precise answer: "Recommendation systems, demand forecasting, and customer segmentation"
+
+### Future Improvements
+Potential areas for further enhancement:
+- **Reranking**: Add a cross-encoder reranking step after initial retrieval
+- **Query expansion**: Expand user queries with synonyms for better recall
+- **Hybrid search**: Combine semantic search with keyword-based BM25
+- **Larger context window**: Use models with 4K+ context for more comprehensive answers
 
 ## Tips
 
