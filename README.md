@@ -286,10 +286,3 @@ with open('embeddings.pkl', 'wb') as f:
 ## License
 
 This project is open source and available under the MIT License.
-
-## Acknowledgments
-
-- **Qwen Team** for the Qwen2.5 models
-- **llama.cpp** for fast inference
-- **sentence-transformers** for embeddings
-- **Gradio** for the UI framework
